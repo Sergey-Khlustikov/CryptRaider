@@ -48,24 +48,7 @@ void UGrabber::Grab()
 		return;
 	}
 
-	FVector Start = GetComponentLocation();
-	FVector End = Start + GetForwardVector() * MaxGrabDistance;
-
-	FCollisionShape Sphere = FCollisionShape::MakeSphere(GrabRadius);
-	FHitResult HitResult;
-
-	bool HasHit = GetWorld()->SweepSingleByChannel(
-		HitResult,
-		Start,
-		End,
-		FQuat::Identity,
-		ECC_GameTraceChannel2,
-		Sphere
-	);
-
-	AActor* HitActor = HitResult.GetActor();
-
-	if (HasHit && HitActor != nullptr)
+	if (FHitResult HitResult; GetFirstPhysicsBodyInReach(HitResult))
 	{
 		UPrimitiveComponent* HitComponent = HitResult.GetComponent();
 		HitComponent->WakeAllRigidBodies();
@@ -107,4 +90,20 @@ UPhysicsHandleComponent* UGrabber::GetPhysicsHandle() const
 void UGrabber::MoveCloserOrFarther(float const Delta)
 {
 	HoldDistance += Delta * 10.0f;
+}
+
+bool UGrabber::GetFirstPhysicsBodyInReach(FHitResult& HitResult) const
+{
+	FVector const Start = GetComponentLocation();
+	FVector const End = Start + GetForwardVector() * MaxGrabDistance;
+	FCollisionShape const Sphere = FCollisionShape::MakeSphere(GrabRadius);
+	
+	 return GetWorld()->SweepSingleByChannel(
+		HitResult,
+		Start,
+		End,
+		FQuat::Identity,
+		ECC_GameTraceChannel2,
+		Sphere
+	);
 }
