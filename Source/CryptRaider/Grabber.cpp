@@ -28,8 +28,8 @@ void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	UPhysicsHandleComponent* PhysicsHandle = GetPhysicsHandle();
-	
-	if (PhysicsHandle == nullptr || PhysicsHandle->GetGrabbedComponent() == nullptr)
+
+	if (!PhysicsHandle || !PhysicsHandle->GetGrabbedComponent())
 	{
 		return;
 	}
@@ -42,8 +42,8 @@ void UGrabber::TickComponent(float DeltaTime, ELevelTick TickType, FActorCompone
 void UGrabber::Grab()
 {
 	UPhysicsHandleComponent* PhysicsHandle = GetPhysicsHandle();
-	
-	if (PhysicsHandle == nullptr)
+
+	if (!PhysicsHandle)
 	{
 		return;
 	}
@@ -52,7 +52,9 @@ void UGrabber::Grab()
 	{
 		UPrimitiveComponent* HitComponent = HitResult.GetComponent();
 		HitComponent->WakeAllRigidBodies();
-		
+
+		HitResult.GetActor()->Tags.Add("Grabbed");
+
 		PhysicsHandle->GrabComponentAtLocationWithRotation(
 			HitComponent,
 			NAME_None,
@@ -65,12 +67,13 @@ void UGrabber::Grab()
 void UGrabber::Release()
 {
 	UPhysicsHandleComponent* PhysicsHandle = GetPhysicsHandle();
-	
-	if (PhysicsHandle == nullptr || PhysicsHandle->GetGrabbedComponent() == nullptr)
+
+	if (!PhysicsHandle || !PhysicsHandle->GetGrabbedComponent())
 	{
 		return;
 	}
 
+	PhysicsHandle->GetGrabbedComponent()->GetOwner()->Tags.Remove("Grabbed");
 	PhysicsHandle->GetGrabbedComponent()->WakeAllRigidBodies();
 	PhysicsHandle->ReleaseComponent();
 }
@@ -78,17 +81,23 @@ void UGrabber::Release()
 UPhysicsHandleComponent* UGrabber::GetPhysicsHandle() const
 {
 	UPhysicsHandleComponent* PhysicsHandle = GetOwner()->FindComponentByClass<UPhysicsHandleComponent>();
-	
+
 	if (PhysicsHandle == nullptr)
 	{
 		UE_LOG(LogTemp, Error, TEXT("No PhysicsHandle found on %s"), *GetOwner()->GetName());
 	}
-	
+
 	return PhysicsHandle;
 }
 
 void UGrabber::MoveCloserOrFarther(float const Delta)
 {
+	// Do not allow the player to move the object closer than 0.0f or farther than MaxGrabDistance
+	if (HoldDistance + Delta < 0.0f || HoldDistance + Delta > MaxGrabDistance)
+	{
+		return;
+	}
+
 	HoldDistance += Delta * 10.0f;
 }
 
@@ -97,8 +106,8 @@ bool UGrabber::GetFirstPhysicsBodyInReach(FHitResult& HitResult) const
 	FVector const Start = GetComponentLocation();
 	FVector const End = Start + GetForwardVector() * MaxGrabDistance;
 	FCollisionShape const Sphere = FCollisionShape::MakeSphere(GrabRadius);
-	
-	 return GetWorld()->SweepSingleByChannel(
+
+	return GetWorld()->SweepSingleByChannel(
 		HitResult,
 		Start,
 		End,
