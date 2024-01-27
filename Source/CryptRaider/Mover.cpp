@@ -31,44 +31,19 @@ void UMover::TickComponent(
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (ShouldMove)
-	{
-		Move(DeltaTime);
-	}
-	else
-	{
-		MoveBack(DeltaTime);
-	}
+	Move(DeltaTime);
 }
 
 void UMover::Move(float const DeltaTime)
 {
 	FVector const CurrentLocation = GetOwner()->GetActorLocation();
-	FVector const TargetLocation = StartLocation + MoveOffset;
+	FVector const TargetLocation = ShouldMove ? StartLocation + MoveOffset : StartLocation;
 	float const Speed = FVector::Dist(CurrentLocation, TargetLocation) / MoveTime;
 
 	FVector const FinalLocation = FMath::VInterpConstantTo(CurrentLocation, TargetLocation, DeltaTime, Speed);
 
 	GetOwner()->SetActorLocation(FinalLocation);
 }
-
-void UMover::MoveBack(float DeltaTime)
-{
-	FVector const CurrentLocation = GetOwner()->GetActorLocation();
-	FVector const TargetLocation = StartLocation;
-
-	if (CurrentLocation.Equals(TargetLocation))
-	{
-		return;
-	}
-	
-	float const Speed = FVector::Dist(CurrentLocation, TargetLocation) / MoveTime;
-
-	FVector const FinalLocation = FMath::VInterpConstantTo(CurrentLocation, TargetLocation, DeltaTime, Speed);
-
-	GetOwner()->SetActorLocation(FinalLocation);
-}
-
 
 void UMover::SetShouldMove(bool const NewShouldMove)
 {

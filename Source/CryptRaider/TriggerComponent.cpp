@@ -21,14 +21,20 @@ void UTriggerComponent::TickComponent(
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
+	if (!Mover)
+	{
+		return;
+	}
+	
 	AActor* const TriggeredActor = GetFirstTriggeredActor();
-
+	
 	if (TriggeredActor != nullptr)
 	{
 		UPrimitiveComponent* Component = Cast<UPrimitiveComponent>(TriggeredActor->GetRootComponent());
 
 		if (Component != nullptr)
 		{
+			// @todo snap actor to to the bottom of the trigger
 			TriggeredActor->AttachToComponent(this, FAttachmentTransformRules::KeepWorldTransform);
 			Component->SetSimulatePhysics(false);
 		}
